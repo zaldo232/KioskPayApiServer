@@ -1,0 +1,7 @@
+# 기본 Visual Studio용 예시
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.db
