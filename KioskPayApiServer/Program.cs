@@ -58,9 +58,15 @@ app.MapGet("/approve", async (HttpContext context) =>
     var result = await response.Content.ReadAsStringAsync();
 
     if (response.IsSuccessStatusCode)
-        return Results.Content("<html><body><h2>결제가 정상적으로 완료되었습니다.</h2></body></html>", "text/html");
+        return Results.Content(
+            "<html><body><h2>결제가 정상적으로 완료되었습니다.</h2></body></html>",
+            "text/html; charset=utf-8"
+        );
     else
-        return Results.Content($"<html><body><h2>결제 승인 실패!</h2><pre>{result}</pre></body></html>", "text/html");
+        return Results.Content(
+            $"<html><body><h2>결제 승인 실패!</h2><pre>{result}</pre></body></html>",
+            "text/html; charset=utf-8"
+        );
 });
 
 app.Run();
