@@ -1,15 +1,17 @@
-using System.Net.Http.Headers;
+ï»¿using System.Net.Http.Headers;
 using System.Text.Json;
 
+// Minimal API ê¸°ë°˜ ì¹´ì¹´ì˜¤í˜ì´ ê²°ì œìŠ¹ì¸ ì„œë²„
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-// ¸Ş¸ğ¸® Ä³½Ã (½Ç¼­ºñ½º´Â DB ±ÇÀå)
+// // ë©”ëª¨ë¦¬ ìºì‹œ: orderId <-> tid 
 Dictionary<string, string> OrderIdToTid = new();
 
 app.MapGet("/", () => "KakaoPay Approval Server Running!");
 
-// 1. tidµî·Ï ¿£µåÆ÷ÀÎÆ® (¡Ú WPF¿¡¼­ ¹İµå½Ã POST!)
+// tid ë“±ë¡ ì—”ë“œí¬ì¸íŠ¸ (í´ë¼ì´ì–¸íŠ¸: ë°˜ë“œì‹œ POST)
+// WPF í´ë¼ì´ì–¸íŠ¸ì—ì„œ ê²°ì œ ì¤€ë¹„ì‹œ orderId/tid ë§¤í•‘ìš©
 app.MapPost("/register-tid", async (HttpContext context) =>
 {
     var data = await JsonSerializer.DeserializeAsync<Dictionary<string, string>>(context.Request.Body);
@@ -20,20 +22,27 @@ app.MapPost("/register-tid", async (HttpContext context) =>
     return Results.Ok();
 });
 
-// 2. approval_url Äİ¹é (Ä«Ä«¿À¿¡¼­ GET)
+// ì¹´ì¹´ì˜¤ì—ì„œ ê²°ì œ ìŠ¹ì¸ redirect ì½œë°± (approval_urlë¡œ í˜¸ì¶œë¨)
+// approval_url?orderId=...&pg_token=... ë¡œ í˜¸ì¶œë¨
 app.MapGet("/approve", async (HttpContext context) =>
 {
+    // ì¿¼ë¦¬íŒŒë¼ë¯¸í„° ì¶”ì¶œ
     string? pg_token = context.Request.Query["pg_token"];
     string? partner_order_id = context.Request.Query["orderId"];
-    string partner_user_id = "kiosk-user";
+    string partner_user_id = "kiosk-user"; // ì‹¤ì œ ì„œë¹„ìŠ¤ì—ì„  ìœ ì € ì •ë³´ ì‚¬ìš©
 
     if (string.IsNullOrEmpty(pg_token) || string.IsNullOrEmpty(partner_order_id))
+    {
         return Results.BadRequest("Missing pg_token or orderId");
+    }
 
+    // tidëŠ” í´ë¼ì´ì–¸íŠ¸ì—ì„œ ë¯¸ë¦¬ ì €ì¥ëœ ê°’
     if (!OrderIdToTid.TryGetValue(partner_order_id, out var tid) || string.IsNullOrEmpty(tid))
+    {
         return Results.BadRequest("tid not found for orderId");
+    }
 
-    // Ä«Ä«¿ÀÆäÀÌ °áÁ¦½ÂÀÎ API
+    // ì¹´ì¹´ì˜¤í˜ì´ ê²°ì œìŠ¹ì¸ API
     var httpClient = new HttpClient();
     var requestUrl = "https://kapi.kakao.com/v1/payment/approve";
     var adminKey = "0f96e6b0ba4e4797fb92766da78409f3";
@@ -57,17 +66,21 @@ app.MapGet("/approve", async (HttpContext context) =>
     var response = await httpClient.SendAsync(request);
     var result = await response.Content.ReadAsStringAsync();
 
+    // ìŠ¹ì¸ ê²°ê³¼ë¥¼ ê°„ë‹¨í•œ HTMLë¡œ ë¦¬í„´
     if (response.IsSuccessStatusCode)
+    {
         return Results.Content(
-            "<html><body><h2>°áÁ¦°¡ Á¤»óÀûÀ¸·Î ¿Ï·áµÇ¾ú½À´Ï´Ù.</h2></body></html>",
+            "<html><body><h2>ê²°ì œê°€ ì •ìƒì ìœ¼ë¡œ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.</h2></body></html>",
             "text/html; charset=utf-8"
         );
+    }
     else
+    {
         return Results.Content(
-            $"<html><body><h2>°áÁ¦ ½ÂÀÎ ½ÇÆĞ!</h2><pre>{result}</pre></body></html>",
-            "text/html; charset=utf-8"
-        );
+                $"<html><body><h2>ê²°ì œ ìŠ¹ì¸ ì‹¤íŒ¨!</h2><pre>{result}</pre></body></html>",
+                "text/html; charset=utf-8"
+            );
+    }
 });
 
 app.Run();
- 
