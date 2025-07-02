@@ -16,7 +16,9 @@ app.MapPost("/register-tid", async (HttpContext context) =>
 {
     var data = await JsonSerializer.DeserializeAsync<Dictionary<string, string>>(context.Request.Body);
     if (data == null || !data.TryGetValue("orderId", out var orderId) || !data.TryGetValue("tid", out var tid))
-        return Results.BadRequest("Missing orderId or tid");
+    { 
+        return Results.BadRequest("Missing orderId or tid"); 
+    }
     OrderIdToTid[orderId] = tid;
     Console.WriteLine($"[REGISTER] {orderId} -> {tid}");
     return Results.Ok();
